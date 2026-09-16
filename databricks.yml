@@ -1,0 +1,37 @@
+bundle:
+  name: integ-pattern-react
+
+include:
+  - resources/*.yml
+
+# Unity Catalog target for the generated integration packages / volumes.
+# Override per-target below. The app also lets users pick catalog/schema at
+# runtime; these are the defaults surfaced to the app via app.yaml env vars.
+variables:
+  catalog:
+    description: UC catalog the app writes integration packages into.
+    default: humana_payer
+  schema:
+    description: UC schema (under the catalog) for the app's volumes.
+    default: integration_pattern
+
+targets:
+  dev:
+    default: true
+    mode: development
+    workspace:
+      profile: fevm
+      # In development mode the app name is prefixed with `[dev <user>]`
+      # and resources are tagged/isolated per user.
+    variables:
+      catalog: humana_payer
+      schema: integration_pattern
+
+  prod:
+    mode: production
+    workspace:
+      profile: fevm
+      root_path: /Workspace/Users/vik.malhotra@databricks.com/.bundle/${bundle.name}/${bundle.target}
+    variables:
+      catalog: humana_payer
+      schema: integration_pattern

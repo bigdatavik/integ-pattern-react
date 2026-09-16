@@ -1,0 +1,27 @@
+resources:
+  apps:
+    integ_pattern_react:
+      name: integ-pattern-react
+      description: >-
+        Integration Pattern Accelerator — React/FastAPI app that generates
+        reusable ingestion-pattern packages in UC Volumes and submits Genie
+        Code job runs.
+
+      # App source lives in ../app (relative to this resources/ file).
+      # Contains app.py (FastAPI), app.yaml (uvicorn command), requirements.txt,
+      # src/ (package generator) and static/ (React UI).
+      source_code_path: ../app
+
+      # OAuth scopes the app's service principal needs at runtime.
+      # NOTE: "all-apis" is NOT a valid Apps scope — use named scopes only.
+      # The /api/run-prompt Genie Code call uses the SP's M2M credentials,
+      # which obtain all-apis from the OAuth server automatically.
+      user_api_scopes:
+        - sql
+        - files
+        - genie
+        - apps
+        - catalog.catalogs
+        - catalog.schemas
+        - catalog.tables
+        - workspace.workspace
