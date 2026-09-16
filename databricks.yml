@@ -27,6 +27,15 @@ targets:
       catalog: humana_payer
       schema: integration_pattern
 
+  test:
+    # Smoke-test deployment to the nbatest workspace.
+    mode: development
+    workspace:
+      profile: nbatest
+    variables:
+      catalog: humana_nba_test_catalog
+      schema: integration_pattern
+
   prod:
     mode: production
     workspace:
