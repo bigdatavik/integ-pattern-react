@@ -2,12 +2,12 @@ const { useState, useEffect, useRef } = React;
 
 /* ---------- constants ---------- */
 const DEFAULTS = {
-  catalog_name: 'humana_payer', schema_name: 'integration_pattern',
+  catalog_name: 'main', schema_name: 'integration_pattern',
   source_volume: 'source_files', file_format: 'csv', file_pattern: '*',
-  target_schema: 'integration_pattern', target_table: 'member_eligibility_bronze',
+  target_schema: 'integration_pattern', target_table: 'sample_bronze',
   artifacts_volume: 'integration_artifacts',
-  business_domain: 'Healthcare - Medicare Advantage',
-  target_description: 'Bronze layer member eligibility data ingested from source volume (Medicare Advantage members)',
+  business_domain: 'General',
+  target_description: 'Bronze layer data ingested from the source volume.',
 };
 
 const ICON_MAP = { config: '\u2699\uFE0F', notebook: '\uD83D\uDCD3', test: '\uD83E\uDDEA', data: '\uD83D\uDCCA', doc: '\uD83D\uDCC4', vol: '\uD83D\uDDC4\uFE0F' };

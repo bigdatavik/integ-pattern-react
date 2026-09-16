@@ -5,7 +5,7 @@ pattern, provide configuration, upload requirements, and generate a reusable
 implementation package in Unity Catalog Volumes — then execute it via Genie
 Code.
 
-React (JSX) frontend + FastAPI backend, deployed to Databricks Apps via
+React (JSX) frontend + FastAPI backend, deployed to **Databricks Apps** via
 **Databricks Asset Bundles (DABs)**.
 
 ## What It Does
@@ -35,46 +35,102 @@ React (JSX) frontend + FastAPI backend, deployed to Databricks Apps via
     └── grant_uc_permissions.sql         # One-time UC grants for the app SP
 ```
 
-## Deploy with DABs
+---
 
-Prerequisites: Databricks CLI (`databricks -v`) and an authenticated profile
-(`fevm` is the default target profile — change it in `databricks.yml` if needed).
+## Deploy to a New Workspace
+
+Anyone can deploy this to their own Databricks workspace. Nothing in the repo is
+tied to a specific workspace — you supply the workspace (via a CLI profile) and
+the target catalog/schema.
+
+### Prerequisites
+
+- **Databricks CLI ≥ v1.0** — `databricks -v` ([install](https://docs.databricks.com/dev-tools/cli/install.html))
+- **An authenticated CLI profile** for the target workspace:
+  ```bash
+  databricks auth login --host https://<your-workspace>.cloud.databricks.com --profile <profile>
+  ```
+- **A Unity Catalog schema** the app can write into (any catalog + schema you
+  have `CREATE VOLUME` on). Create one if needed:
+  ```bash
+  databricks schemas create integration_pattern <catalog> --profile <profile>
+  ```
+- **Foundation Model access** — the app calls `databricks-claude-sonnet-*`
+  endpoints for prompt generation. If they aren't available it falls back to a
+  deterministic template (still works).
+- **Permission** to create Databricks Apps in the workspace.
+
+### Step 1 — Point the bundle at your catalog/schema
+
+Either edit the `catalog` / `schema` defaults in `databricks.yml`, or pass them
+at deploy time with `--var` (shown below). Defaults are `main` /
+`integration_pattern`.
+
+### Step 2 — Deploy (creates the app + uploads source)
 
 ```bash
-# 1. Validate the bundle
-databricks bundle validate --target dev
+databricks bundle validate -t dev -p <profile>
 
-# 2. Deploy (uploads app source + creates/updates the app)
-databricks bundle deploy --target dev
-
-# 3. Start / run the app
-databricks bundle run integ_pattern_react --target dev
+databricks bundle deploy   -t dev -p <profile> \
+  --var="catalog=<catalog>" --var="schema=<schema>"
 ```
 
-`databricks bundle deploy` creates the app on first run, which auto-provisions a
-service principal (SP). The OAuth scopes the app needs are declared in
+This creates the app `integ-pattern-react`, which auto-provisions a **service
+principal (SP)**. The OAuth scopes it needs (`sql`, `files`, `genie`, `apps`,
+`catalog.*`, `workspace.workspace`) are declared in
 `resources/integ-pattern-react.app.yml` and applied automatically.
 
-### One-time UC grants (catalog admin)
-
-The app's SP is only minted once the app is created, so its Unity Catalog
-grants can't be set in the bundle up front. After the first deploy, grant them:
+### Step 3 — Start / run the app
 
 ```bash
-# Find the app's SP client id
-databricks apps get integ-pattern-react --target dev -o json \
+databricks bundle run integ_pattern_react -t dev -p <profile>
+```
+
+The app URL is printed at the end. (First start provisions compute — allow a
+few minutes.)
+
+### Step 4 — Grant the app SP Unity Catalog access (one-time, catalog admin)
+
+The SP only exists after Step 2, so its UC grants can't be set in the bundle up
+front. Find its client id, then run the grant script:
+
+```bash
+# Get the app's SP client id
+databricks apps get integ-pattern-react -p <profile> -o json \
   | python3 -c "import sys,json;print(json.load(sys.stdin)['service_principal_client_id'])"
 ```
 
-Then run `scripts/grant_uc_permissions.sql` as a catalog admin (substitute the
-SP client id for `:sp`). This grants `USE CATALOG`, `USE SCHEMA`, and
-`READ`/`WRITE`/`CREATE VOLUME` on `humana_payer.integration_pattern`.
+Then run the five `GRANT` statements in `scripts/grant_uc_permissions.sql`
+(substitute `<catalog>`, `<schema>`, and `<sp>`) from a SQL editor or:
 
-### Targets
+```bash
+databricks sql query --profile <profile> ...   # or paste into the SQL editor
+```
 
-`databricks.yml` defines `dev` (development mode, per-user isolated app name)
-and `prod` (production mode). Catalog/schema defaults are set per target via
-bundle variables.
+These grant `USE CATALOG`, `USE SCHEMA`, and `READ`/`WRITE`/`CREATE VOLUME`.
+
+### Step 5 — Verify
+
+```bash
+databricks apps get integ-pattern-react -p <profile> -o json \
+  | python3 -c "import sys,json;d=json.load(sys.stdin);print('state:',d['app_status']['state'],'| url:',d['url'])"
+```
+
+State should be `RUNNING`. Open the URL — the pattern cards should load.
+
+### Production target
+
+`databricks.yml` also defines a `prod` target (production mode, single deployed
+copy under your workspace user path). Deploy it the same way with `-t prod`.
+
+### Redeploying after changes
+
+```bash
+databricks bundle deploy -t dev -p <profile> && \
+databricks bundle run integ_pattern_react -t dev -p <profile>
+```
+
+---
 
 ## Genie Code Integration
 

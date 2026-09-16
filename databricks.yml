@@ -4,43 +4,35 @@ bundle:
 include:
   - resources/*.yml
 
-# Unity Catalog target for the generated integration packages / volumes.
-# Override per-target below. The app also lets users pick catalog/schema at
-# runtime; these are the defaults surfaced to the app via app.yaml env vars.
+# UC catalog/schema the app writes integration packages + volumes into.
+# Override per-target (or with `--var`). The app UI also lets users pick a
+# catalog/schema at runtime; these are just the defaults.
 variables:
   catalog:
     description: UC catalog the app writes integration packages into.
-    default: humana_payer
+    default: main
   schema:
     description: UC schema (under the catalog) for the app's volumes.
     default: integration_pattern
 
+# Authentication is NOT hardcoded here so anyone can deploy to their own
+# workspace. Pick the target workspace with the CLI, e.g.:
+#   databricks bundle deploy -t dev -p <your-profile>
+# or set DATABRICKS_CONFIG_PROFILE / DATABRICKS_HOST + DATABRICKS_TOKEN.
 targets:
   dev:
     default: true
     mode: development
-    workspace:
-      profile: fevm
-      # In development mode the app name is prefixed with `[dev <user>]`
-      # and resources are tagged/isolated per user.
+    # In development mode resources are isolated per user.
     variables:
-      catalog: humana_payer
-      schema: integration_pattern
-
-  test:
-    # Smoke-test deployment to the nbatest workspace.
-    mode: development
-    workspace:
-      profile: nbatest
-    variables:
-      catalog: humana_nba_test_catalog
+      catalog: main
       schema: integration_pattern
 
   prod:
     mode: production
     workspace:
-      profile: fevm
-      root_path: /Workspace/Users/vik.malhotra@databricks.com/.bundle/${bundle.name}/${bundle.target}
+      # Portable per-user path so only one copy is deployed.
+      root_path: /Workspace/Users/${workspace.current_user.userName}/.bundle/${bundle.name}/${bundle.target}
     variables:
-      catalog: humana_payer
+      catalog: main
       schema: integration_pattern
