@@ -150,8 +150,16 @@ OAuth scope, which is only available on M2M tokens — not on the scope-restrict
 user-auth token the platform injects when `user_api_scopes` is set. Do **not**
 change this endpoint to user-token auth.
 
-The Genie Code job task is in **Beta** — a workspace admin must enable it under
-**Settings → Previews** before the button works.
+### Enable the Genie Code Job Task preview (required for this button)
+
+The Genie Code job task is in **Beta**. Before the **Execute with Genie Code**
+button works, a workspace admin must turn on the preview:
+
+**Settings → Developer → Previews → "Genie Code Job Task" → On**
+
+> **Genie Code Job Task** `Beta` — *Enables genie code as a task type in jobs.*
+
+Docs: https://docs.databricks.com/aws/en/jobs/tasks/genie-code
 
 ## Pitfalls & Lessons Learned
 
